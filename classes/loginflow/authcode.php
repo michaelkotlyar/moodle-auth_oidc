@@ -442,6 +442,13 @@ class authcode extends base {
             $this->handlemissingstaterecord();
         }
 
+        // Sesskey verification.
+        if (!hash_equals($staterec->sesskey, sesskey())) {
+            // State was not initiated by this session - reject (prevents login/link CSRF).
+            $DB->delete_records('auth_oidc_state', ['id' => $staterec->id]);
+            throw new moodle_exception('errorauthunknownstate', 'auth_oidc');
+        }
+
         $csrfverified = is_https() || !empty($CFG->sslproxy) || !empty($_COOKIE['auth_oidc_csrf']);
         if ($csrfverified) {
             $this->verify_csrf_cookie($staterec);
@@ -532,6 +539,13 @@ class authcode extends base {
         $staterec = $DB->get_record('auth_oidc_state', ['state' => $authparams['state']]);
         if (empty($staterec)) {
             $this->handlemissingstaterecord();
+        }
+
+        // Sesskey verification.
+        if (!hash_equals($staterec->sesskey, sesskey())) {
+            // State was not initiated by this session - reject (prevents login/link CSRF).
+            $DB->delete_records('auth_oidc_state', ['id' => $staterec->id]);
+            throw new moodle_exception('errorauthunknownstate', 'auth_oidc');
         }
 
         $csrfverified = is_https() || !empty($CFG->sslproxy) || !empty($_COOKIE['auth_oidc_csrf']);
